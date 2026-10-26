@@ -134,18 +134,14 @@ public class SeasonManager {
 
 
     private void winterEffect(List<Cell> cells) {
-
         Iterator<Cell> iterator = cells.iterator();
 
         while (iterator.hasNext()) {
-
             iterator.next();
 
-            // 2% chance for this cell to die.
+            // 3% chance for this cell to die.
             if (random.nextDouble() < 0.03) {
-
                 iterator.remove();
-
                 simulationPanel.incrementDeadCellCount();
             }
         }
@@ -156,30 +152,25 @@ public class SeasonManager {
 
         List<Cell> newCells = new ArrayList<>();
 
-        for (Cell cell : cells) {
-
+        cells.stream()
             // Only neutral cells can reproduce.
-            if (cell.getState().equals(NeutralState.INSTANCE)) {
-
+            .filter(cell -> cell.getState().equals(NeutralState.INSTANCE))
+            // The lambda runs once for each neutral cell.
+            .forEach(cell -> {
                 // 10% chance for this cell to reproduce.
                 if (random.nextDouble() < 0.10) {
-
                     double newX = cell.getX() + (random.nextDouble() * 10 - 5);
                     double newY = cell.getY() + (random.nextDouble() * 10 - 5);
 
-                    newCells.add(
-                        new Cell(
-                            newX,
-                            newY,
-                            cells.size() + newCells.size(),
-                            NeutralState.INSTANCE
-                        )
-                    );
-
+                    newCells.add(new Cell(
+                        newX,
+                        newY,
+                        cells.size() + newCells.size(),
+                        NeutralState.INSTANCE
+                    ));
                     simulationPanel.incrementDuplicateCellCount();
                 }
-            }
-        }
+            });
 
         // Add all new cells after the loop has finished.
         cells.addAll(newCells);

@@ -8,6 +8,8 @@ import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.Timer;
@@ -190,15 +192,14 @@ public class SimulationPanel extends JPanel implements ActionListener {
     }
 
     public int[] countByType() {
-        int neutral = 0, infected = 0, antivirus = 0;
-        for (Cell c : cells) {
-            if (c.getState() == NeutralState.INSTANCE)
-                neutral++;
-            if (c.getState() == InfectedState.INSTANCE)
-                infected++;
-            if (c.getState() == AntivirusState.INSTANCE)
-                antivirus++;
-        }
+        Map<String, Long> countsByType = cells.stream()
+                .collect(Collectors.groupingBy(
+                        cell -> cell.getState().getType(),
+                        Collectors.counting()));
+
+        int neutral = Math.toIntExact(countsByType.getOrDefault("NEUTRAL", 0L));
+        int infected = Math.toIntExact(countsByType.getOrDefault("INFECTED", 0L));
+        int antivirus = Math.toIntExact(countsByType.getOrDefault("ANTIVIRUS", 0L));
         return new int[] { neutral, infected, antivirus };
     }
 
@@ -343,18 +344,16 @@ public class SimulationPanel extends JPanel implements ActionListener {
     }
 
     public float calculateR0() {
-        float r0InfectedCount = 0;
-        float totalInfectionsCaused = 0;
-        for (Cell c : cells) {
-            if (c.infectedThisWindow) {
-                r0InfectedCount++;
-                totalInfectionsCaused += c.infectionsCaused;
-            }
-        }
-        if (r0InfectedCount == 0) {
+        // Each worker computes part of the summary; the stream combines the results.
+        java.util.DoubleSummaryStatistics infectionStats = cells.parallelStream()
+                .filter(cell -> cell.infectedThisWindow)
+                .mapToDouble(cell -> cell.infectionsCaused)
+                .summaryStatistics();
+
+        if (infectionStats.getCount() == 0) {
             return 0;
         }
-        return totalInfectionsCaused / r0InfectedCount;
+        return (float) infectionStats.getAverage();
     }
 
     public List<SimulationStats> getStatsHistory() {
