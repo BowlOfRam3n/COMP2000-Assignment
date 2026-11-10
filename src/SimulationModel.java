@@ -3,6 +3,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.DoubleSupplier;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * The simulation's data and rules.
@@ -157,31 +159,24 @@ public class SimulationModel {
 
     /** @return {neutral, infected, antivirus} */
     public int[] countByType() {
-        int neutral = 0, infected = 0, antivirus = 0;
-        for (Cell c : population) {
-            if (c.getState() == NeutralState.INSTANCE)
-                neutral++;
-            if (c.getState() == InfectedState.INSTANCE)
-                infected++;
-            if (c.getState() == AntivirusState.INSTANCE)
-                antivirus++;
-        }
-        return new int[] { neutral, infected, antivirus };
+        // One pass: group the cells by state and count each group.
+        Map<CellState, Long> counts = population.stream()
+                .collect(Collectors.groupingBy(Cell::getState, Collectors.counting()));
+
+        return new int[] {
+                counts.getOrDefault(NeutralState.INSTANCE, 0L).intValue(),
+                counts.getOrDefault(InfectedState.INSTANCE, 0L).intValue(),
+                counts.getOrDefault(AntivirusState.INSTANCE, 0L).intValue()
+        };
     }
 
     public float calculateR0() {
-        float r0InfectedCount = 0;
-        float totalInfectionsCaused = 0;
-        for (Cell c : population) {
-            if (c.infectedThisWindow) {
-                r0InfectedCount++;
-                totalInfectionsCaused += c.infectionsCaused;
-            }
-        }
-        if (r0InfectedCount == 0) {
-            return 0;
-        }
-        return totalInfectionsCaused / r0InfectedCount;
+        // Average number of infections caused by the cells that were infected this window.
+        return (float) population.stream()
+                .filter(c -> c.infectedThisWindow)
+                .mapToInt(c -> c.infectionsCaused)
+                .average()
+                .orElse(0);
     }
 
     /** Read-only view for the renderer. Replaced by an Iterator in step 2. */
