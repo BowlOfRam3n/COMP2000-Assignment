@@ -1,11 +1,10 @@
 import java.awt.Color;
-import java.util.Iterator;
 import java.util.Random;
 
 public class WinterSeason implements SeasonStrategy {
     private final Random random = new Random();
 
-    @Override 
+    @Override
     public String getName() {
         return "WINTER";
     }
@@ -16,18 +15,9 @@ public class WinterSeason implements SeasonStrategy {
     }
 
     @Override
-    public void applyEffect(Population cells, SimulationModel model){
-        Iterator<Cell> iterator = cells.iterator();
-
-        while (iterator.hasNext()) {
-            iterator.next();
-
-            // 3% chance for this cell to die.
-
-            if (random.nextDouble() < 0.03){
-                iterator.remove();;
-                model.incrementDeadCellCount();
-            }
-        }
+    public void applyEffect(Population cells, SimulationModel model) {
+        // 3% chance for each cell to die; the rule is a Predicate.
+        int died = cells.removeIf(c -> random.nextDouble() < 0.03);
+        model.incrementDeadCellCount(died);
     }
 }
