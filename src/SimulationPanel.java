@@ -211,29 +211,25 @@ public class SimulationPanel extends JPanel implements ActionListener {
 
         if (numOfInfected <= 5 && Berserk.getBerserkChanceLeft() > 0 && !Berserk.isBerserk()) {
             try {
-                Berserk.EnterBerserk(); // Enter berserk mode
-            } catch (Exception e) {
-                System.out.println("Failed to enter Berserk");
-            }finally {
-            
-            // Make infected cells berserk
-            for (Cell c : cells) {
-                if (c.getState() == InfectedState.INSTANCE) {
-                    c.isBerserk = true;
-                }
-            }
-            }
-        } 
-        else if (!Berserk.isBerserk()) {
+                Berserk.EnterBerserk(); // Throws if berserk can't start
 
+                // Only reached if EnterBerserk succeeded: make infected cells berserk
+                for (Cell c : cells){
+                    if (c.getState() == InfectedState.INSTANCE) {
+                        c.isBerserk = true;
+                    }
+                }
+            } catch (IllegalBerserkException e) {
+                System.out.println("Failed to enter Berserk:" + e.getMessage());
+            }
+        } else if (!Berserk.isBerserk()) {
+            // Berserk is off, so clear the flag on every cell
             for (Cell c : cells) {
                 if (c.isBerserk) {
                     c.isBerserk = false;
                 }
             }
-
-            // Turn Berserk state off
-        }
+        } 
     }
 
     public void drawStats(Graphics g) {
