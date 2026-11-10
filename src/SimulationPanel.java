@@ -169,6 +169,12 @@ public class SimulationPanel extends JPanel implements ActionListener {
         g.drawString("Duplicate Cells: " + model.getDuplicateCellCount(), simScreenX + offset, offset * 25);
         g.setColor(Color.magenta);
         g.drawString("R0 Value: " + model.getR0(), simScreenX + offset, offset * 28);
+        g.setColor(Color.ORANGE);
+        
+        g.drawString("Peak Infected: " + model.getPeakInfected(), simScreenX + offset, offset * 50);
+        boolean active = model.isOutbreakActive();
+        g.setColor(active ? Color.RED : Color.GREEN);
+        g.drawString("Outbreak: " + (active ? "Active" : "Contained"), simScreenX + offset, offset * 53);
     }
 
     @Override

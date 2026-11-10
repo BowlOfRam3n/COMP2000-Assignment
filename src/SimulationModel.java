@@ -179,6 +179,18 @@ public class SimulationModel {
                 .orElse(0);
     }
 
+    // Highest infected count seen in any recorded snapshot.
+    public int getPeakInfected() {
+        return statsHistory.stream()
+            .mapToInt(SimulationStats::getInfectedCount)
+            .max().orElse(0);
+    }
+
+    // True while at least on cell is infected
+    public boolean isOutbreakActive() {
+        return population.stream().anyMatch(c -> c.getState() == InfectedState.INSTANCE);
+    }
+
     /** Read-only view for the renderer. Replaced by an Iterator in step 2. */
     public Iterable<Cell> getCells() {
         return population;
