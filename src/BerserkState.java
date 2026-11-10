@@ -3,7 +3,7 @@ public class BerserkState {
     private int enterBerserkChance; // Chances left to enter berserk
 
     private long berserkStartTime; // start counting berserk state
-    private int berserkDuration = 10000; // duration 5 secs
+    private int berserkDuration = 10000; // duration 10 secs (in ms)
 
     public BerserkState() {
         this.isBerserk = false; // Start no berserk
