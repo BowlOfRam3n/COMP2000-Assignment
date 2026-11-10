@@ -22,7 +22,7 @@ public class BerserkState {
             throw new IllegalBerserkException("No berserk uses remaining"); // prevent calling  enterBerserk when no Berserk chances left
         }
         if (this.isBerserk) {
-            throw new IllegalBerserkException("No berserk uses remaining"); // prevent calling enterBerserk when infected cells are already in berserk state
+            throw new IllegalBerserkException("Already berserk"); // prevent calling EnterBerserk when infected cells are already in berserk state
         }
 
         this.isBerserk = true;
