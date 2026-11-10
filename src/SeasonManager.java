@@ -13,7 +13,7 @@ public class SeasonManager {
         AUTUMN
     }
 
-    private final SimulationPanel simulationPanel;
+    private final SimulationModel simulationModel;
     private final Random random = new Random();
 
     private Season currentSeason;
@@ -25,9 +25,9 @@ public class SeasonManager {
     private int seasonLengthSeconds;
 
 
-    public SeasonManager(SimulationPanel simulationPanel) {
+    public SeasonManager(SimulationModel simulationModel) {
 
-        this.simulationPanel = simulationPanel;
+        this.simulationModel = simulationModel;
         currentSeason = Season.values()[
             random.nextInt(Season.values().length)
         ];
@@ -146,7 +146,7 @@ public class SeasonManager {
 
                 iterator.remove();
 
-                simulationPanel.incrementDeadCellCount();
+                simulationModel.incrementDeadCellCount();
             }
         }
     }
@@ -176,7 +176,7 @@ public class SeasonManager {
                         )
                     );
 
-                    simulationPanel.incrementDuplicateCellCount();
+                    simulationModel.incrementDuplicateCellCount();
                 }
             }
         }
@@ -229,14 +229,14 @@ public class SeasonManager {
 
         if (enabled && currentSeason == Season.WINTER) {
 
-            simulationPanel.setSimulationBackground(
+            simulationModel.setSimulationBackground(
                 new Color(210, 230, 245)
             );
 
         } else {
 
             // Return to the normal background outside winter.
-            simulationPanel.setSimulationBackground(
+            simulationModel.setSimulationBackground(
                 Color.LIGHT_GRAY
             );
         }
