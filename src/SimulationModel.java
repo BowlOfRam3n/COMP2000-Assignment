@@ -7,7 +7,7 @@ import java.util.List;
  * The simulation's data and rules.
  */
 public class SimulationModel {
-    private final List<Cell> cells = new ArrayList<>();
+    private final Population population = new Population();
     private final List<SimulationStats> statsHistory = new ArrayList<>();
     private final SeasonManager seasonManager;
 
@@ -45,7 +45,7 @@ public class SimulationModel {
 
     public void reset() {
         cellCount = Settings.CELL_COUNT;
-        cells.clear();
+        population.clear();
         statsHistory.clear();
         cellsCreated = false;
         deadCellCount = 0;
@@ -69,11 +69,11 @@ public class SimulationModel {
             double randomY = offset + Math.random() * (worldHeight - 2 * offset - 20);
 
             if (i < Settings.INFECTED_COUNT) {
-                cells.add(new Cell(randomX, randomY, i, InfectedState.INSTANCE));
+                population.add(new Cell(randomX, randomY, i, InfectedState.INSTANCE));
             } else if (i < Settings.ANTIVIRUS_COUNT + Settings.INFECTED_COUNT) {
-                cells.add(new Cell(randomX, randomY, i, AntivirusState.INSTANCE));
+                population.add(new Cell(randomX, randomY, i, AntivirusState.INSTANCE));
             } else {
-                cells.add(new Cell(randomX, randomY, i, NeutralState.INSTANCE));
+                population.add(new Cell(randomX, randomY, i, NeutralState.INSTANCE));
             }
         }
     }
@@ -87,39 +87,35 @@ public class SimulationModel {
         lastUpdateTime = currentTime;
 
         // Move each cell.
-        for (Cell cell : cells) {
+        for (Cell cell : population) {
             cell.move(worldWidth, worldHeight, offset, offset);
         }
 
-        // Check cell collisions.
-        for (int i = 0; i < cells.size(); i++) {
-            for (int j = i + 1; j < cells.size(); j++) {
-                Cell a = cells.get(i);
-                Cell b = cells.get(j);
-                if (a.collidesWith(b)) {
-                    a.onCollision(b);
-                }
+        // Check cell collisions (every unordered pair once).
+        for (CellPair pair : population.collisionPairs()) {
+            if (pair.a().collidesWith(pair.b())) {
+                pair.a().onCollision(pair.b());
             }
         }
 
         // Update the season system.
-        seasonManager.update(cells, deltaTime);
+        seasonManager.update(population, deltaTime);
 
         // Random deaths and duplications.
         List<Cell> toRemove = new ArrayList<>();
         List<Cell> toAdd = new ArrayList<>();
-        for (Cell c : cells) {
+        for (Cell c : population) {
             if (Math.random() < 0.0001) {
                 toRemove.add(c);
             }
             if ((c.getState() == InfectedState.INSTANCE || c.getState() == AntivirusState.INSTANCE)
                     && Math.random() < 0.0002) {
-                toAdd.add(new Cell(c.getX(), c.getY(), cells.size(), c.getState(), Color.ORANGE, true));
+                toAdd.add(new Cell(c.getX(), c.getY(), population.size(), c.getState(), Color.ORANGE, true));
             }
         }
-        cells.removeAll(toRemove);
+        population.removeAll(toRemove);
         deadCellCount += toRemove.size();
-        cells.addAll(toAdd);
+        population.addAll(toAdd);
         duplicateCellCount += toAdd.size();
 
         // Record stats every 125 ticks.
@@ -131,7 +127,7 @@ public class SimulationModel {
                     counts[0], counts[1], counts[2],
                     deadCellCount, duplicateCellCount, r0, simTick));
 
-            for (Cell c : cells) {
+            for (Cell c : population) {
                 c.infectionsCaused = 0;
                 c.infectedThisWindow = false;
             }
@@ -141,7 +137,7 @@ public class SimulationModel {
     }
 
     private void updateBerserk() {
-        if (!cellsCreated || cells.isEmpty()) {
+        if (!cellsCreated || population.isEmpty()) {
             return;
         }
 
@@ -151,7 +147,7 @@ public class SimulationModel {
             try {
                 berserk.EnterBerserk(); // Throws if berserk can't start
 
-                for (Cell c : cells) {
+                for (Cell c : population) {
                     if (c.getState() == InfectedState.INSTANCE) {
                         c.isBerserk = true;
                     }
@@ -160,7 +156,7 @@ public class SimulationModel {
                 System.out.println("Failed to enter Berserk: " + e.getMessage());
             }
         } else if (!berserk.isBerserk()) {
-            for (Cell c : cells) {
+            for (Cell c : population) {
                 if (c.isBerserk) {
                     c.isBerserk = false;
                 }
@@ -171,7 +167,7 @@ public class SimulationModel {
     /** @return {neutral, infected, antivirus} */
     public int[] countByType() {
         int neutral = 0, infected = 0, antivirus = 0;
-        for (Cell c : cells) {
+        for (Cell c : population) {
             if (c.getState() == NeutralState.INSTANCE)
                 neutral++;
             if (c.getState() == InfectedState.INSTANCE)
@@ -185,7 +181,7 @@ public class SimulationModel {
     public float calculateR0() {
         float r0InfectedCount = 0;
         float totalInfectionsCaused = 0;
-        for (Cell c : cells) {
+        for (Cell c : population) {
             if (c.infectedThisWindow) {
                 r0InfectedCount++;
                 totalInfectionsCaused += c.infectionsCaused;
@@ -198,15 +194,18 @@ public class SimulationModel {
     }
 
     /** Read-only view for the renderer. Replaced by an Iterator in step 2. */
-    public List<Cell> getCells() {
-        return Collections.unmodifiableList(cells);
+    public Iterable<Cell> getCells() {
+        return population;
+    }
+
+    public int getTotalCellCount() { 
+        return population.size(); 
     }
 
     public List<SimulationStats> getStatsHistory() {
         return Collections.unmodifiableList(statsHistory);
     }
-
-    public int getTotalCellCount() { return cells.size(); }
+    
     public int getDeadCellCount() { return deadCellCount; }
     public int getDuplicateCellCount() { return duplicateCellCount; }
     public float getR0() { return r0; }

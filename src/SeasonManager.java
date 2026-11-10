@@ -39,7 +39,7 @@ public class SeasonManager {
     }
 
 
-    public void update(List<Cell> cells, long deltaTime) {
+    public void update(Population cells, long deltaTime) {
         if (!enabled) {
             resetCellModifiers(cells);
             return;
@@ -70,7 +70,7 @@ public class SeasonManager {
     }
 
 
-    private void changeSeason(List<Cell> cells) {
+    private void changeSeason(Population cells) {
 
         // Move to the next season.
         switch (currentSeason) {
@@ -110,7 +110,7 @@ public class SeasonManager {
     }
 
 
-    private void applySeasonEffect(List<Cell> cells) {
+    private void applySeasonEffect(Population cells) {
 
         switch (currentSeason) {
 
@@ -133,7 +133,7 @@ public class SeasonManager {
     }
 
 
-    private void winterEffect(List<Cell> cells) {
+    private void winterEffect(Population cells) {
 
         Iterator<Cell> iterator = cells.iterator();
 
@@ -152,7 +152,7 @@ public class SeasonManager {
     }
 
 
-    private void springEffect(List<Cell> cells) {
+    private void springEffect(Population cells) {
 
         List<Cell> newCells = new ArrayList<>();
 
@@ -186,7 +186,7 @@ public class SeasonManager {
     }
 
 
-    private void updateCellModifiers(List<Cell> cells) {
+    private void updateCellModifiers(Population cells) {
 
         for (Cell cell : cells) {
 
@@ -217,7 +217,7 @@ public class SeasonManager {
         }
     }
     
-    private void resetCellModifiers(List<Cell> cells) {
+    private void resetCellModifiers(Population cells) {
         for (Cell cell : cells) {
             cell.setSpeedMultiplier(1.0);
             cell.setSizeMultiplier(1.0);
