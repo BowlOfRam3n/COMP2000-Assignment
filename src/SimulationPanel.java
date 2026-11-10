@@ -156,7 +156,7 @@ public class SimulationPanel extends JPanel implements ActionListener {
 
     public void createCells() {
         try {
-            validate();
+            validateSettings();
         } catch (InvalidSettingsException e) {
             Settings.INFECTED_COUNT = 3;
             Settings.ANTIVIRUS_COUNT = 3;
@@ -388,7 +388,7 @@ public class SimulationPanel extends JPanel implements ActionListener {
         }
     }
 
-    public void validate() {
+    public void validateSettings() {
         if (Settings.INFECTED_COUNT + Settings.ANTIVIRUS_COUNT > Settings.CELL_COUNT) {
             throw new InvalidSettingsException("Infected + antivirus exceeds total cell count");
         }
