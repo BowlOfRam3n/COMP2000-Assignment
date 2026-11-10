@@ -2,6 +2,7 @@ import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.DoubleSupplier;
 
 /**
  * The simulation's data and rules.
@@ -64,16 +65,21 @@ public class SimulationModel {
             Settings.INFECTED_COUNT = 3;
             Settings.ANTIVIRUS_COUNT = 3;
         }
+
+        // Suppliers: each call produces a new random coordinate
+        DoubleSupplier randomX = () -> offset + Math.random() * (worldWidth - 2 * offset - 20);
+        DoubleSupplier randomY = () -> offset + Math.random() * (worldHeight - 2 * offset - 20);
+
         for (int i = 0; i < cellCount; i++) {
-            double randomX = offset + Math.random() * (worldWidth - 2 * offset - 20);
-            double randomY = offset + Math.random() * (worldHeight - 2 * offset - 20);
+            double x = randomX.getAsDouble();
+            double y = randomY.getAsDouble();
 
             if (i < Settings.INFECTED_COUNT) {
-                population.add(new Cell(randomX, randomY, i, InfectedState.INSTANCE));
+                population.add(new Cell(x, y, i, InfectedState.INSTANCE));
             } else if (i < Settings.ANTIVIRUS_COUNT + Settings.INFECTED_COUNT) {
-                population.add(new Cell(randomX, randomY, i, AntivirusState.INSTANCE));
+                population.add(new Cell(x, y, i, AntivirusState.INSTANCE));
             } else {
-                population.add(new Cell(randomX, randomY, i, NeutralState.INSTANCE));
+                population.add(new Cell(x, y, i, NeutralState.INSTANCE));
             }
         }
     }
@@ -101,20 +107,17 @@ public class SimulationModel {
         // Update the season system.
         seasonManager.update(population, deltaTime);
 
-        // Random deaths and duplications.
-        List<Cell> toRemove = new ArrayList<>();
+        // Random deaths (each cell has a tiny chance per tick).
+        incrementDeadCellCount(population.removeIf(c -> Math.random() < 0.0001));
+
+        // Random duplication of infected and antivirus cells.
         List<Cell> toAdd = new ArrayList<>();
-        for (Cell c : population) {
-            if (Math.random() < 0.0001) {
-                toRemove.add(c);
-            }
+        population.forEach(c -> {
             if ((c.getState() == InfectedState.INSTANCE || c.getState() == AntivirusState.INSTANCE)
                     && Math.random() < 0.0002) {
                 toAdd.add(new Cell(c.getX(), c.getY(), population.size(), c.getState(), Color.ORANGE, true));
             }
-        }
-        population.removeAll(toRemove);
-        deadCellCount += toRemove.size();
+        });
         population.addAll(toAdd);
         duplicateCellCount += toAdd.size();
 
@@ -127,13 +130,9 @@ public class SimulationModel {
                     counts[0], counts[1], counts[2],
                     deadCellCount, duplicateCellCount, r0, simTick));
 
-            for (Cell c : population) {
-                c.infectionsCaused = 0;
-                c.infectedThisWindow = false;
-            }
+            population.forEach(Cell::resetInfectionWindow);
         }
-
-        updateBerserk();
+            updateBerserk();
     }
 
     private void updateBerserk() {
@@ -147,18 +146,12 @@ public class SimulationModel {
             try {
                 berserk.EnterBerserk(); // Throws if berserk can't start
 
-                for (Cell c : population.ofState(InfectedState.INSTANCE)) {
-                    c.isBerserk = true;
-                }
+                population.ofState(InfectedState.INSTANCE).forEach(c -> c.isBerserk = true);
             } catch (IllegalBerserkException e) {
                 System.out.println("Failed to enter Berserk: " + e.getMessage());
             }
         } else if (!berserk.isBerserk()) {
-            for (Cell c : population) {
-                if (c.isBerserk) {
-                    c.isBerserk = false;
-                }
-            }
+            population.forEach(c -> c.isBerserk = false);
         }
     }
 
@@ -224,6 +217,10 @@ public class SimulationModel {
 
     public void incrementDeadCellCount() {
         deadCellCount++;
+    }
+
+    public void incrementDeadCellCount(int amount) {
+        deadCellCount += amount;
     }
 
     public void incrementDuplicateCellCount() {

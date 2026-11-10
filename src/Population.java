@@ -4,6 +4,7 @@ import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.function.Predicate;
 
 /**
  * The collection of cells in the simulation.
@@ -38,6 +39,14 @@ public class Population implements Iterable<Cell> {
 
     public boolean isEmpty() {
         return cells.isEmpty();
+    }
+
+    // Removes every cell the rule says should go, and returns how many were removed.
+    // The caller decodes the rule by passing a predicate.
+    public int removeIf(Predicate<Cell> shouldRemove) {
+        int before = cells.size();
+        cells.removeIf(shouldRemove);
+        return before - cells.size();
     }
 
     // Iteration
