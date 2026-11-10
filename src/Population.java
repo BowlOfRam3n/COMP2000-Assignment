@@ -5,6 +5,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 /**
  * The collection of cells in the simulation.
@@ -39,6 +40,11 @@ public class Population implements Iterable<Cell> {
 
     public boolean isEmpty() {
         return cells.isEmpty();
+    }
+
+    // A stream oer the cells, so caller's dont need to know that they are stored in a list
+    public Stream<Cell> stream(){
+        return cells.stream();
     }
 
     // Removes every cell the rule says should go, and returns how many were removed.
