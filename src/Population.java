@@ -53,6 +53,48 @@ public class Population implements Iterable<Cell> {
         return () -> new PairIterator();
     }
 
+    /** Only the cells currently in the given state. */
+    public Iterable<Cell> ofState(CellState state) {
+        return () -> new StateIterator(state);
+    }
+
+    private class StateIterator implements Iterator<Cell> {
+        private final CellState wanted;
+        private final Iterator<Cell> source = cells.iterator();
+        private Cell nextMatch; // look-ahead: the next cell that matches, or null
+
+        StateIterator(CellState wanted) {
+            this.wanted = wanted;
+            advance();
+        }
+
+        private void advance() {
+            nextMatch = null;
+            while (source.hasNext()) {
+                Cell c = source.next();
+                if (c.getState() == wanted) {
+                    nextMatch = c;
+                    return;
+                }
+            }
+        }
+
+        @Override
+        public boolean hasNext() {
+            return nextMatch != null;
+        }
+
+        @Override
+        public Cell next() {
+            if (nextMatch == null) {
+                throw new NoSuchElementException();
+            }
+            Cell result = nextMatch;
+            advance();
+            return result;
+        }
+    }
+
     private class PairIterator implements Iterator<CellPair> {
         private final int expectedSize = cells.size(); // fail-fast check
         private int i = 0;

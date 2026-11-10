@@ -154,36 +154,33 @@ public class SeasonManager {
 
     private void springEffect(Population cells) {
 
-        List<Cell> newCells = new ArrayList<>();
+    List<Cell> newCells = new ArrayList<>();
 
-        for (Cell cell : cells) {
+    // Only neutral cells can reproduce.
+    for (Cell cell : cells.ofState(NeutralState.INSTANCE)) {
 
-            // Only neutral cells can reproduce.
-            if (cell.getState().equals(NeutralState.INSTANCE)) {
+        // 10% chance for this cell to reproduce.
+        if (random.nextDouble() < 0.10) {
 
-                // 10% chance for this cell to reproduce.
-                if (random.nextDouble() < 0.10) {
+            double newX = cell.getX() + (random.nextDouble() * 10 - 5);
+            double newY = cell.getY() + (random.nextDouble() * 10 - 5);
 
-                    double newX = cell.getX() + (random.nextDouble() * 10 - 5);
-                    double newY = cell.getY() + (random.nextDouble() * 10 - 5);
+            newCells.add(
+                new Cell(
+                    newX,
+                    newY,
+                    cells.size() + newCells.size(),
+                    NeutralState.INSTANCE
+                )
+            );
 
-                    newCells.add(
-                        new Cell(
-                            newX,
-                            newY,
-                            cells.size() + newCells.size(),
-                            NeutralState.INSTANCE
-                        )
-                    );
-
-                    simulationModel.incrementDuplicateCellCount();
-                }
-            }
+            simulationModel.incrementDuplicateCellCount();
         }
-
-        // Add all new cells after the loop has finished.
-        cells.addAll(newCells);
     }
+
+    // Add all new cells after the loop has finished.
+    cells.addAll(newCells);
+}
 
 
     private void updateCellModifiers(Population cells) {

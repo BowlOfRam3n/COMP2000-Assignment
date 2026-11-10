@@ -147,10 +147,8 @@ public class SimulationModel {
             try {
                 berserk.EnterBerserk(); // Throws if berserk can't start
 
-                for (Cell c : population) {
-                    if (c.getState() == InfectedState.INSTANCE) {
-                        c.isBerserk = true;
-                    }
+                for (Cell c : population.ofState(InfectedState.INSTANCE)) {
+                    c.isBerserk = true;
                 }
             } catch (IllegalBerserkException e) {
                 System.out.println("Failed to enter Berserk: " + e.getMessage());
@@ -205,7 +203,7 @@ public class SimulationModel {
     public List<SimulationStats> getStatsHistory() {
         return Collections.unmodifiableList(statsHistory);
     }
-    
+
     public int getDeadCellCount() { return deadCellCount; }
     public int getDuplicateCellCount() { return duplicateCellCount; }
     public float getR0() { return r0; }
