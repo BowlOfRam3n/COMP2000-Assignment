@@ -42,9 +42,15 @@ public class Population implements Iterable<Cell> {
         return cells.isEmpty();
     }
 
-    // A stream oer the cells, so caller's dont need to know that they are stored in a list
-    public Stream<Cell> stream(){
-        return cells.stream();
+    /** Above this many cells a parallel stream is faster (measured with ParallelBenchmark). */
+    private static final int PARALLEL_THRESHOLD = 50_000; // <- replace with your measured value
+
+    /**
+     * A stream over the cells. Small populations use a sequential stream, large ones a
+     * parallel stream. Every pipeline that uses this must be free of side effects.
+     */
+    public Stream<Cell> stream() {
+        return cells.size() >= PARALLEL_THRESHOLD ? cells.parallelStream() : cells.stream();
     }
 
     // Removes every cell the rule says should go, and returns how many were removed.
