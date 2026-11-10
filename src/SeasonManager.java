@@ -1,22 +1,25 @@
 import java.awt.Color;
-import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
+/**
+ * The Context in the Strategy pattern: keeps the timers and cycles through
+ * the seasons, delegating each season's behaviour to a SeasonStrategy.
+ */
 public class SeasonManager {
-
-    public enum Season {
-        WINTER,
-        SPRING,
-        SUMMER,
-        AUTUMN
-    }
+    private static final int RESET_INDEX = 1; // SPRING, same as the old reset()
 
     private final SimulationModel simulationModel;
     private final Random random = new Random();
 
-    private Season currentSeason;
+    // Order of this list is the order the seasons cycle in.
+    private final List<SeasonStrategy> seasons = List.of(
+            new WinterSeason(),
+            new SpringSeason(),
+            new SummerSeason(),
+            new AutumnSeason());
+
+    private int currentIndex;
     private boolean enabled = true;
 
     private long seasonTimer = 0;
@@ -24,13 +27,9 @@ public class SeasonManager {
 
     private int seasonLengthSeconds;
 
-
     public SeasonManager(SimulationModel simulationModel) {
-
         this.simulationModel = simulationModel;
-        currentSeason = Season.values()[
-            random.nextInt(Season.values().length)
-        ];
+        currentIndex = random.nextInt(seasons.size());
 
         // Choose a random season length between 5 and 10 seconds.
         seasonLengthSeconds = random.nextInt(6) + 5;
@@ -38,6 +37,9 @@ public class SeasonManager {
         updateBackground();
     }
 
+    private SeasonStrategy current() {
+        return seasons.get(currentIndex);
+    }
 
     public void update(Population cells, long deltaTime) {
         if (!enabled) {
@@ -48,172 +50,41 @@ public class SeasonManager {
         seasonTimer += deltaTime;
         effectTimer += deltaTime;
 
-
         // Apply temporary speed and size modifiers.
         updateCellModifiers(cells);
 
-
-        // Apply effects once every second.
+        // Apply the season's effect once every second.
         while (effectTimer >= 1000) {
-
             effectTimer -= 1000;
-
-            applySeasonEffect(cells);
+            current().applyEffect(cells, simulationModel);
         }
-
 
         // Change season when the season timer reaches its limit.
         if (seasonTimer >= seasonLengthSeconds * 1000L) {
-
             changeSeason(cells);
         }
     }
 
-
     private void changeSeason(Population cells) {
+        currentIndex = (currentIndex + 1) % seasons.size();
 
-        // Move to the next season.
-        switch (currentSeason) {
-
-            case WINTER:
-                currentSeason = Season.SPRING;
-                break;
-
-            case SPRING:
-                currentSeason = Season.SUMMER;
-                break;
-
-            case SUMMER:
-                currentSeason = Season.AUTUMN;
-                break;
-
-            case AUTUMN:
-                currentSeason = Season.WINTER;
-                break;
-        }
-
-
-        // Reset timers for the new season.
         seasonTimer = 0;
         effectTimer = 0;
-
-        // Choose a new random season length between 5 and 10 seconds.
         seasonLengthSeconds = random.nextInt(6) + 5;
 
-
-        // Update the background.
         updateBackground();
-
-
-        // Immediately apply/reset the new season's modifiers.
         updateCellModifiers(cells);
     }
 
-
-    private void applySeasonEffect(Population cells) {
-
-        switch (currentSeason) {
-
-            case WINTER:
-                winterEffect(cells);
-                break;
-
-            case SPRING:
-                springEffect(cells);
-                break;
-
-            case SUMMER:
-                // Summer has no once-per-second effect.
-                break;
-
-            case AUTUMN:
-                // Autumn has no once-per-second effect.
-                break;
-        }
-    }
-
-
-    private void winterEffect(Population cells) {
-
-        Iterator<Cell> iterator = cells.iterator();
-
-        while (iterator.hasNext()) {
-
-            iterator.next();
-
-            // 3% chance for this cell to die.
-            if (random.nextDouble() < 0.03) {
-
-                iterator.remove();
-
-                simulationModel.incrementDeadCellCount();
-            }
-        }
-    }
-
-
-    private void springEffect(Population cells) {
-
-    List<Cell> newCells = new ArrayList<>();
-
-    // Only neutral cells can reproduce.
-    for (Cell cell : cells.ofState(NeutralState.INSTANCE)) {
-
-        // 10% chance for this cell to reproduce.
-        if (random.nextDouble() < 0.10) {
-
-            double newX = cell.getX() + (random.nextDouble() * 10 - 5);
-            double newY = cell.getY() + (random.nextDouble() * 10 - 5);
-
-            newCells.add(
-                new Cell(
-                    newX,
-                    newY,
-                    cells.size() + newCells.size(),
-                    NeutralState.INSTANCE
-                )
-            );
-
-            simulationModel.incrementDuplicateCellCount();
-        }
-    }
-
-    // Add all new cells after the loop has finished.
-    cells.addAll(newCells);
-}
-
-
     private void updateCellModifiers(Population cells) {
-
         for (Cell cell : cells) {
-
-            // Reset modifiers first.
+            // Reset modifiers first, then let the season apply its own.
             cell.setSpeedMultiplier(1.0);
             cell.setSizeMultiplier(1.0);
-            
-
-
-            if (currentSeason == Season.SUMMER) {
-
-                // Infected cells move 1.4x faster.
-                if (cell.getState().equals(InfectedState.INSTANCE)) {
-
-                    cell.setSpeedMultiplier(1.4);
-                }
-            }
-
-
-            if (currentSeason == Season.AUTUMN) {
-
-                // Antivirus cells become 1.2x larger.
-                if (cell.getState().equals(AntivirusState.INSTANCE)) {
-
-                    cell.setSizeMultiplier(1.2);
-                }
-            }
+            current().modifyCell(cell);
         }
     }
-    
+
     private void resetCellModifiers(Population cells) {
         for (Cell cell : cells) {
             cell.setSpeedMultiplier(1.0);
@@ -221,64 +92,37 @@ public class SeasonManager {
         }
     }
 
-
     private void updateBackground() {
-
-        if (enabled && currentSeason == Season.WINTER) {
-
-            simulationModel.setSimulationBackground(
-                new Color(210, 230, 245)
-            );
-
-        } else {
-
-            // Return to the normal background outside winter.
-            simulationModel.setSimulationBackground(
-                Color.LIGHT_GRAY
-            );
-        }
+        // Seasons only change the background when they're enabled.
+        simulationModel.setSimulationBackground(
+                enabled ? current().getBackground() : Color.LIGHT_GRAY);
     }
 
-
-    public Season getCurrentSeason() {
-
-        return currentSeason;
+    public SeasonStrategy getCurrentSeason() {
+        return current();
     }
-
 
     public int getSecondsRemaining() {
-
-        long remainingMilliseconds =
-            (seasonLengthSeconds * 1000L) - seasonTimer;
-
-        return (int) Math.ceil(
-            remainingMilliseconds / 1000.0
-        );
+        long remainingMilliseconds = (seasonLengthSeconds * 1000L) - seasonTimer;
+        return (int) Math.ceil(remainingMilliseconds / 1000.0);
     }
 
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
-
         seasonTimer = 0;
         effectTimer = 0;
-
         updateBackground();
     }
 
     public boolean isEnabled() {
-         return enabled;
-    } 
-
+        return enabled;
+    }
 
     public void reset() {
-
-        currentSeason = Season.SPRING;
-
+        currentIndex = RESET_INDEX;
         seasonTimer = 0;
         effectTimer = 0;
-
         seasonLengthSeconds = random.nextInt(6) + 5;
-
         updateBackground();
     }
 }
