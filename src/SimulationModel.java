@@ -209,7 +209,7 @@ public class SimulationModel {
     public float getR0() { return r0; }
     public Color getBackground() { return background; }
 
-    public SeasonManager.Season getCurrentSeason() { return seasonManager.getCurrentSeason(); }
+    public String getCurrentSeason() { return seasonManager.getCurrentSeason().getName(); }
     public int getSecondsRemaining() { return seasonManager.getSecondsRemaining(); }
 
     // Commands used by SeasonManager
