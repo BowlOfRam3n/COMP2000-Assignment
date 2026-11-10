@@ -328,16 +328,6 @@ public class SimulationPanel extends JPanel implements ActionListener {
         repaint();
     }
 
-    public void randomDeath(Cell c, int id) {
-        double randomNum = Math.random();
-        if (randomNum < 0.0001) { // small chance to die
-            cells.remove(id);
-            deadCellCount++;
-        }
-
-        repaint();
-    }
-
     public float calculateR0() {
         float r0InfectedCount = 0;
         float totalInfectionsCaused = 0;
