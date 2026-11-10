@@ -39,7 +39,7 @@ public class SeasonManager {
     }
 
 
-    public void update(List<Cell> cells, long deltaTime) {
+    public void update(Population cells, long deltaTime) {
         if (!enabled) {
             resetCellModifiers(cells);
             return;
@@ -70,7 +70,7 @@ public class SeasonManager {
     }
 
 
-    private void changeSeason(List<Cell> cells) {
+    private void changeSeason(Population cells) {
 
         // Move to the next season.
         switch (currentSeason) {
@@ -110,7 +110,7 @@ public class SeasonManager {
     }
 
 
-    private void applySeasonEffect(List<Cell> cells) {
+    private void applySeasonEffect(Population cells) {
 
         switch (currentSeason) {
 
@@ -133,7 +133,7 @@ public class SeasonManager {
     }
 
 
-    private void winterEffect(List<Cell> cells) {
+    private void winterEffect(Population cells) {
 
         Iterator<Cell> iterator = cells.iterator();
 
@@ -152,41 +152,38 @@ public class SeasonManager {
     }
 
 
-    private void springEffect(List<Cell> cells) {
+    private void springEffect(Population cells) {
 
-        List<Cell> newCells = new ArrayList<>();
+    List<Cell> newCells = new ArrayList<>();
 
-        for (Cell cell : cells) {
+    // Only neutral cells can reproduce.
+    for (Cell cell : cells.ofState(NeutralState.INSTANCE)) {
 
-            // Only neutral cells can reproduce.
-            if (cell.getState().equals(NeutralState.INSTANCE)) {
+        // 10% chance for this cell to reproduce.
+        if (random.nextDouble() < 0.10) {
 
-                // 10% chance for this cell to reproduce.
-                if (random.nextDouble() < 0.10) {
+            double newX = cell.getX() + (random.nextDouble() * 10 - 5);
+            double newY = cell.getY() + (random.nextDouble() * 10 - 5);
 
-                    double newX = cell.getX() + (random.nextDouble() * 10 - 5);
-                    double newY = cell.getY() + (random.nextDouble() * 10 - 5);
+            newCells.add(
+                new Cell(
+                    newX,
+                    newY,
+                    cells.size() + newCells.size(),
+                    NeutralState.INSTANCE
+                )
+            );
 
-                    newCells.add(
-                        new Cell(
-                            newX,
-                            newY,
-                            cells.size() + newCells.size(),
-                            NeutralState.INSTANCE
-                        )
-                    );
-
-                    simulationModel.incrementDuplicateCellCount();
-                }
-            }
+            simulationModel.incrementDuplicateCellCount();
         }
-
-        // Add all new cells after the loop has finished.
-        cells.addAll(newCells);
     }
 
+    // Add all new cells after the loop has finished.
+    cells.addAll(newCells);
+}
 
-    private void updateCellModifiers(List<Cell> cells) {
+
+    private void updateCellModifiers(Population cells) {
 
         for (Cell cell : cells) {
 
@@ -217,7 +214,7 @@ public class SeasonManager {
         }
     }
     
-    private void resetCellModifiers(List<Cell> cells) {
+    private void resetCellModifiers(Population cells) {
         for (Cell cell : cells) {
             cell.setSpeedMultiplier(1.0);
             cell.setSizeMultiplier(1.0);
