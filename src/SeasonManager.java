@@ -76,20 +76,21 @@ public class SeasonManager {
         updateCellModifiers(cells);
     }
 
+    private void resetModifiers(Cell cell) {
+        cell.setSpeedMultiplier(1.0);
+        cell.setSizeMultiplier(1.0);
+    }
+
     private void updateCellModifiers(Population cells) {
-        for (Cell cell : cells) {
+        cells.forEach(cell -> {
             // Reset modifiers first, then let the season apply its own.
-            cell.setSpeedMultiplier(1.0);
-            cell.setSizeMultiplier(1.0);
+            resetModifiers(cell);
             current().modifyCell(cell);
-        }
+        });
     }
 
     private void resetCellModifiers(Population cells) {
-        for (Cell cell : cells) {
-            cell.setSpeedMultiplier(1.0);
-            cell.setSizeMultiplier(1.0);
-        }
+        cells.forEach(this::resetModifiers);
     }
 
     private void updateBackground() {

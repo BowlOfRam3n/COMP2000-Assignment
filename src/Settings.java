@@ -1,6 +1,7 @@
-
 import java.awt.Color;
 import java.awt.GridLayout;
+import java.util.function.IntConsumer;
+import java.util.function.IntFunction;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSlider;
@@ -14,6 +15,33 @@ public class Settings {
     public static int ANTIVIRUS_COUNT = 6;
     public static boolean hasCollision = true;
 
+    /**
+     * Adds a "label | slider | value" row to the panel.
+     * The behaviour that differs per slider is passed in as lambdas:
+     * @param setter  what to do with the slider's value (a Consumer of int)
+     * @param format  how to display the value as text (a Function from int to String)
+     */
+    private void addSlider(JPanel panel, String name, int min, int max, int initial,
+                           IntConsumer setter, IntFunction<String> format) {
+        JLabel label = new JLabel(name);
+        label.setForeground(Color.WHITE);
+
+        JSlider slider = new JSlider(min, max, initial);
+        slider.setBackground(Color.WHITE);
+
+        JLabel valueLabel = new JLabel(format.apply(initial));
+        valueLabel.setForeground(Color.WHITE);
+
+        slider.addChangeListener(e -> {
+            setter.accept(slider.getValue());
+            valueLabel.setText(format.apply(slider.getValue()));
+        });
+
+        panel.add(label);
+        panel.add(slider);
+        panel.add(valueLabel);
+    }
+
     public JPanel settingsPanel() {
         // Create a settings panel with sliders for cell size and speed
         JPanel settingsPanel = new JPanel();
@@ -21,60 +49,21 @@ public class Settings {
         settingsPanel.setBackground(Color.DARK_GRAY);
         settingsPanel.setOpaque(true);
 
-        JLabel sizeLabel = new JLabel("Size");
-        sizeLabel.setForeground(Color.WHITE);
-        JSlider sizeSlider = new JSlider(5, 50, Settings.CELL_SIZE);
-        sizeSlider.setBackground(Color.WHITE);
-        JLabel sizeValueLabel = new JLabel(String.valueOf(Settings.CELL_SIZE));
-        sizeValueLabel.setForeground(Color.WHITE);
-        sizeSlider.addChangeListener(e -> {
-            Settings.CELL_SIZE = sizeSlider.getValue();
-            sizeValueLabel.setText(String.valueOf(Settings.CELL_SIZE));
-        });
+        addSlider(settingsPanel, "Size", 5, 50, Settings.CELL_SIZE,
+                v -> Settings.CELL_SIZE = v, String::valueOf);
 
-        JLabel speedLabel = new JLabel("Speed");
-        speedLabel.setForeground(Color.WHITE);
-        JSlider speedSlider = new JSlider(1, 100, (int) (Settings.CELL_SPEED * 10));
-        speedSlider.setBackground(Color.WHITE);
-        JLabel speedValueLabel = new JLabel(String.valueOf(Settings.CELL_SPEED));
-        speedValueLabel.setForeground(Color.WHITE);
-        speedSlider.addChangeListener(e -> {
-            Settings.CELL_SPEED = speedSlider.getValue() / 10.0;
-            speedValueLabel.setText(String.valueOf(Settings.CELL_SPEED));
-        });
+        // The slider holds tenths, so 20 means a speed of 2.0
+        addSlider(settingsPanel, "Speed", 1, 100, (int) (Settings.CELL_SPEED * 10),
+                v -> Settings.CELL_SPEED = v / 10.0, v -> String.valueOf(v / 10.0));
 
-        JLabel countLabel = new JLabel("Count");
-        countLabel.setForeground(Color.WHITE);
-        JSlider countSlider = new JSlider(10, 200, Settings.CELL_COUNT);
-        countSlider.setBackground(Color.WHITE);
-        JLabel countValueLabel = new JLabel(String.valueOf(Settings.CELL_COUNT));
-        countValueLabel.setForeground(Color.WHITE);
-        countSlider.addChangeListener(e -> {
-            Settings.CELL_COUNT = countSlider.getValue();
-            countValueLabel.setText(String.valueOf(Settings.CELL_COUNT));
-        });
+        addSlider(settingsPanel, "Count", 10, 200, Settings.CELL_COUNT,
+                v -> Settings.CELL_COUNT = v, String::valueOf);
 
-        JLabel infectedCountLabel = new JLabel("InfCells");
-        infectedCountLabel.setForeground(Color.WHITE);
-        JSlider infectedCountSlider = new JSlider(1, 20, Settings.INFECTED_COUNT);
-        infectedCountSlider.setBackground(Color.WHITE);
-        JLabel infectedCountValueLabel = new JLabel(String.valueOf(Settings.INFECTED_COUNT));
-        infectedCountValueLabel.setForeground(Color.WHITE);
-        infectedCountSlider.addChangeListener(e -> {
-            Settings.INFECTED_COUNT = infectedCountSlider.getValue();
-            infectedCountValueLabel.setText(String.valueOf(Settings.INFECTED_COUNT));
-        });
+        addSlider(settingsPanel, "InfCells", 1, 20, Settings.INFECTED_COUNT,
+                v -> Settings.INFECTED_COUNT = v, String::valueOf);
 
-        JLabel antivirusCountLabel = new JLabel("AntiCells");
-        antivirusCountLabel.setForeground(Color.WHITE);
-        JSlider antivirusCountSlider = new JSlider(1, 20, Settings.ANTIVIRUS_COUNT);
-        antivirusCountSlider.setBackground(Color.WHITE);
-        JLabel antivirusCountValueLabel = new JLabel(String.valueOf(Settings.ANTIVIRUS_COUNT));
-        antivirusCountValueLabel.setForeground(Color.WHITE);
-        antivirusCountSlider.addChangeListener(e -> {
-            Settings.ANTIVIRUS_COUNT = antivirusCountSlider.getValue();
-            antivirusCountValueLabel.setText(String.valueOf(Settings.ANTIVIRUS_COUNT));
-        });
+        addSlider(settingsPanel, "AntiCells", 1, 20, Settings.ANTIVIRUS_COUNT,
+                v -> Settings.ANTIVIRUS_COUNT = v, String::valueOf);
 
         JLabel collisionLabel = new JLabel("Collision");
         collisionLabel.setForeground(Color.WHITE);
@@ -84,22 +73,6 @@ public class Settings {
             Settings.hasCollision = !Settings.hasCollision;
             collisionToggle.setText(Settings.hasCollision ? "On" : "Off");
         });
-
-        settingsPanel.add(sizeLabel);
-        settingsPanel.add(sizeSlider);
-        settingsPanel.add(sizeValueLabel);
-        settingsPanel.add(speedLabel);
-        settingsPanel.add(speedSlider);
-        settingsPanel.add(speedValueLabel);
-        settingsPanel.add(countLabel);
-        settingsPanel.add(countSlider);
-        settingsPanel.add(countValueLabel);
-        settingsPanel.add(infectedCountLabel);
-        settingsPanel.add(infectedCountSlider);
-        settingsPanel.add(infectedCountValueLabel);
-        settingsPanel.add(antivirusCountLabel);
-        settingsPanel.add(antivirusCountSlider);
-        settingsPanel.add(antivirusCountValueLabel);
         settingsPanel.add(collisionLabel);
         settingsPanel.add(collisionToggle);
 

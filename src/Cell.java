@@ -15,7 +15,7 @@ public class Cell {
     private double speedMultiplier = 1.0;
     private double sizeMultiplier = 1.0;
     private int id;
-    private CellState state; //
+    private CellState state; 
     private Color color; // Default color for the cell
     public boolean isDuplicate = false; // Flag to indicate if the cell is duplicated
     public CellImmunity immunity = new CellImmunity(); // Immunity for neutral cells
@@ -418,6 +418,12 @@ public class Cell {
     public void setSizeMultiplier(double multiplier) {
 
         sizeMultiplier = multiplier;
+    }
+
+    // Starts a new R0 measuring window for this cell.
+    public void resetInfectionWindow() {
+        infectionsCaused = 0;
+        infectedThisWindow = false;
     }
 
 }
