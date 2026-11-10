@@ -125,12 +125,11 @@ public class SimulationModel {
 
         // Record stats every 125 ticks.
         if (simTick % 125 == 0) {
-            r0 = calculateR0();
+            SimulationStats snapshot = population.stream()
+                    .collect(SimulationStatsCollector.of(deadCellCount, duplicateCellCount, simTick));
 
-            int[] counts = countByType();
-            statsHistory.add(new SimulationStats(
-                    counts[0], counts[1], counts[2],
-                    deadCellCount, duplicateCellCount, r0, simTick));
+            r0 = snapshot.getR0Value();
+            statsHistory.add(snapshot);
 
             population.forEach(Cell::resetInfectionWindow);
         }
@@ -168,15 +167,6 @@ public class SimulationModel {
                 counts.getOrDefault(InfectedState.INSTANCE, 0L).intValue(),
                 counts.getOrDefault(AntivirusState.INSTANCE, 0L).intValue()
         };
-    }
-
-    public float calculateR0() {
-        // Average number of infections caused by the cells that were infected this window.
-        return (float) population.stream()
-                .filter(c -> c.infectedThisWindow)
-                .mapToInt(c -> c.infectionsCaused)
-                .average()
-                .orElse(0);
     }
 
     // Highest infected count seen in any recorded snapshot.
