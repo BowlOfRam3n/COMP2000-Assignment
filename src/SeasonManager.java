@@ -1,7 +1,7 @@
 import java.awt.Color;
 import java.util.Random;
 
-/** Coordinates the active season and delegates seasonal behaviour to strategies. */
+/** Coordinates season timing and delegates seasonal rules to SeasonStrategy objects. */
 public class SeasonManager {
     private final SimulationModel model;
     private final SeasonStrategy[] seasons = {
@@ -17,6 +17,12 @@ public class SeasonManager {
     private long seasonTimer;
     private long effectTimer;
     private int seasonLengthSeconds;
+    private int seasonStartPopulation = -1;
+
+    // A winter population loss boosts the next spring. Spring growth boosts
+    // the next winter. Both are bounded by the receiving season's strategy.
+    private double winterRecoveryMemory;
+    private double springGrowthMemory;
 
     public SeasonManager(SimulationModel model) {
         this.model = model;
@@ -31,13 +37,17 @@ public class SeasonManager {
             return;
         }
 
+        if (seasonStartPopulation < 0) {
+            seasonStartPopulation = cells.size();
+        }
+
         seasonTimer += deltaTime;
         effectTimer += deltaTime;
         updateCellModifiers(cells);
 
         while (effectTimer >= 1000) {
             effectTimer -= 1000;
-            currentSeason().applyEffect(cells, model);
+            currentSeason().applyEffect(cells, model, memoryForCurrentSeason());
         }
 
         if (seasonTimer >= seasonLengthSeconds * 1000L) {
@@ -46,12 +56,43 @@ public class SeasonManager {
     }
 
     private void changeSeason(Population cells) {
+        recordSeasonOutcome(cells.size());
         currentSeasonIndex = (currentSeasonIndex + 1) % seasons.length;
         seasonTimer = 0;
         effectTimer = 0;
+        seasonStartPopulation = cells.size();
         chooseSeasonLength();
         updateBackground();
         updateCellModifiers(cells);
+    }
+
+    private void recordSeasonOutcome(int endingPopulation) {
+        int startingPopulation = Math.max(1, seasonStartPopulation);
+        double change = endingPopulation - (double) seasonStartPopulation;
+        String endingSeason = currentSeason().getName();
+
+        if ("WINTER".equals(endingSeason)) {
+            // Remember up to a 10 percentage-point recovery bonus after a net loss.
+            winterRecoveryMemory = clamp((-change / startingPopulation) * 0.5, 0.0, 0.10);
+        } else if ("SPRING".equals(endingSeason)) {
+            // Remember up to a 5 percentage-point crowding response after net growth.
+            springGrowthMemory = clamp((change / startingPopulation) * 0.25, 0.0, 0.05);
+        }
+    }
+
+    private double memoryForCurrentSeason() {
+        switch (currentSeason().getName()) {
+            case "SPRING":
+                return winterRecoveryMemory;
+            case "WINTER":
+                return springGrowthMemory;
+            default:
+                return 0.0;
+        }
+    }
+
+    private static double clamp(double value, double minimum, double maximum) {
+        return Math.max(minimum, Math.min(maximum, value));
     }
 
     private void chooseSeasonLength() {
@@ -96,6 +137,7 @@ public class SeasonManager {
         this.enabled = enabled;
         seasonTimer = 0;
         effectTimer = 0;
+        seasonStartPopulation = -1;
         updateBackground();
     }
 
@@ -107,10 +149,10 @@ public class SeasonManager {
         currentSeasonIndex = 1; // Start a reset simulation in spring.
         seasonTimer = 0;
         effectTimer = 0;
+        seasonStartPopulation = -1;
+        winterRecoveryMemory = 0.0;
+        springGrowthMemory = 0.0;
         chooseSeasonLength();
-
         updateBackground();
     }
 }
-
-
